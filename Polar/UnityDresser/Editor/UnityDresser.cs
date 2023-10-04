@@ -6,7 +6,7 @@ using UnityEngine.Animations;
 
 public class UnityDresser : EditorWindow
 {
-    private const string ver = "1.0.0";
+    private const string ver = "1.1.0";
     private static GameObject avatarRef;
     private static GameObject clothingRef;
     private static string prefix;
@@ -135,13 +135,8 @@ public class UnityDresser : EditorWindow
             foreach (var mesh in meshes)
             {
                 Undo.RegisterCreatedObjectUndo(mesh.gameObject, "clothing");
-                var avatarParent = avatarRef.transform;
-                if (mesh.transform.parent != clothing.transform)
-                {
-                    avatarBones.TryGetValue(mesh.name, out Transform avatarParentSet);
-                    avatarParent = avatarParentSet;
-                }
-                mesh.transform.SetParent(avatarParent);
+                if (mesh.transform.parent == clothing.transform)
+                    mesh.transform.SetParent(avatarRef.transform);
             }
         }
         #endregion
