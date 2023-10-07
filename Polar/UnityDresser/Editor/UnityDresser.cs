@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEditor;
@@ -8,7 +9,7 @@ using VRC.SDK3.Dynamics.PhysBone.Components;
 
 public class UnityDresser : EditorWindow
 {
-    private const string ver = "1.3.1";
+    private const string ver = "1.3.2";
     private static GameObject avatarRef;
     private static GameObject clothingRef;
     private static string prefix;
@@ -127,8 +128,8 @@ public class UnityDresser : EditorWindow
 
             if (makeAnims)
             {
-                createAnim(meshParent, true, false);
-                createAnim(meshParent, false, false);
+                CreateAnim(meshParent, true, false);
+                CreateAnim(meshParent, false, false);
             }
 
             foreach (var mesh in meshes)
@@ -159,8 +160,8 @@ public class UnityDresser : EditorWindow
 
                     if (makeAnims)
                     {
-                        createAnim(mesh.gameObject, true, false);
-                        createAnim(mesh.gameObject, false, false);
+                        CreateAnim(mesh.gameObject, true, false);
+                        CreateAnim(mesh.gameObject, false, false);
                     }
                 }
             }
@@ -182,13 +183,12 @@ public class UnityDresser : EditorWindow
 
             if (makeAnims)
             {
-                createAnim(bone.Value.gameObject, true, true);
-                createAnim(bone.Value.gameObject, false, true);
+                CreateAnim(bone.Value.gameObject, true, true);
+                CreateAnim(bone.Value.gameObject, false, true);
             }
         }
         AddLog("Finished parenting bones.");
 
-        Thread.Sleep(100);
         foreach (var bone in avatarBones)
         {
             var physcomp = bone.Value.GetComponent<VRCPhysBone>();
@@ -197,7 +197,7 @@ public class UnityDresser : EditorWindow
                 continue;
 
             Undo.RecordObject(physcomp, "clothing");
-            foreach (var child in bone.Value.GetComponentsInChildren<Transform>())
+            foreach (var child in bone.Value.GetComponentsInChildren<Transform>(true))
             {
                 if (child.name.StartsWith($"({prefix}) "))
                     physcomp.ignoreTransforms.Add(child);
@@ -213,15 +213,15 @@ public class UnityDresser : EditorWindow
         prefix = null;
     }
 
-    private static void createAnim(GameObject obj, bool state, bool nested)
+    private static void CreateAnim(GameObject obj, bool state, bool nested)
     {
         string name = nested ? GetNested(obj.transform) : obj.name;
         string statusString = state ? "on" : "off";
 
-        if (!AssetDatabase.IsValidFolder("Assets/Polar/UnityDresser/Anims"))
-            AssetDatabase.CreateFolder("Assets/Polar/UnityDresser", "Anims");
+        if (!AssetDatabase.IsValidFolder("Assets/UnityDresserAnims"))
+            AssetDatabase.CreateFolder("Assets", "UnityDresserAnims");
 
-        string filename = $"Assets/Polar/UnityDresser/Anims/{prefix}-{statusString}.anim";
+        string filename = $"Assets/UnityDresserAnims/{prefix}-{statusString}.anim";
 
         var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(filename);
         if (clip == null)
@@ -245,3 +245,4 @@ public class UnityDresser : EditorWindow
     }
 
 }
+#endif
