@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
+using VRC.SDK3.Dynamics.PhysBone;
+using VRC.SDK3.Dynamics.PhysBone.Components;
 
 public class UnityDresser : EditorWindow
 {
-    private const string ver = "1.2.0";
+    private const string ver = "1.3.0";
     private static GameObject avatarRef;
     private static GameObject clothingRef;
     private static string prefix;
@@ -185,6 +188,23 @@ public class UnityDresser : EditorWindow
             }
         }
         AddLog("Finished parenting bones.");
+
+        Thread.Sleep(100);
+        foreach (var bone in avatarBones)
+        {
+            var physcomp = bone.Value.GetComponent<VRCPhysBone>();
+
+            if (physcomp == null)
+                continue;
+
+            Undo.RecordObject(physcomp, "clothing");
+            foreach (var child in bone.Value.GetComponentsInChildren<Transform>())
+            {
+                if (child.name.StartsWith($"({prefix}) "))
+                    physcomp.ignoreTransforms.Add(child);
+            }
+        }
+        AddLog("Finished setting ignored transforms in physbones.");
 
         if (makeAnims)
             AddLog("Created toggle animations.");
