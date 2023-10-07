@@ -6,11 +6,13 @@ using UnityEngine.Animations;
 
 public class UnityDresser : EditorWindow
 {
-    private const string ver = "1.1.0";
+    private const string ver = "1.2.0";
     private static GameObject avatarRef;
     private static GameObject clothingRef;
     private static string prefix;
     private static bool groupRender;
+    private static bool makeAnims;
+    private static bool defaultOff;
     private static string log;
 
     [MenuItem("Tools/Polar/Unity Dresser")]
@@ -38,6 +40,8 @@ public class UnityDresser : EditorWindow
         clothingRef = EditorGUILayout.ObjectField("Clothing Prefab", clothingRef, typeof(GameObject), true) as GameObject;
         prefix = EditorGUILayout.TextField("Custom Prefix", prefix);
         groupRender = EditorGUILayout.Toggle("Group Renderers", groupRender);
+        defaultOff = EditorGUILayout.Toggle("Default Off", defaultOff);
+        makeAnims = EditorGUILayout.Toggle("Make Toggle Anims", makeAnims);
 
         if (GUILayout.Button("Apply Clothes"))
         {
@@ -116,6 +120,15 @@ public class UnityDresser : EditorWindow
             meshParent.transform.SetParent(avatarRef.transform, false);
             Undo.RegisterCreatedObjectUndo(meshParent, "clothing");
 
+            if (defaultOff)
+                meshParent.SetActive(false);
+
+            if (makeAnims)
+            {
+                createAnim(meshParent, true, false);
+                createAnim(meshParent, false, false);
+            }
+
             foreach (var mesh in meshes)
             {
                 if (mesh.transform.parent != clothing.transform)
@@ -136,7 +149,18 @@ public class UnityDresser : EditorWindow
             {
                 Undo.RegisterCreatedObjectUndo(mesh.gameObject, "clothing");
                 if (mesh.transform.parent == clothing.transform)
+                {
                     mesh.transform.SetParent(avatarRef.transform);
+
+                    if (defaultOff)
+                        mesh.gameObject.SetActive(false);
+
+                    if (makeAnims)
+                    {
+                        createAnim(mesh.gameObject, true, false);
+                        createAnim(mesh.gameObject, false, false);
+                    }
+                }
             }
         }
         #endregion
@@ -144,14 +168,61 @@ public class UnityDresser : EditorWindow
 
         foreach (var bone in clothingBones)
         {
+            if (groupRender && bone.Value.GetComponent<Renderer>())
+                continue;
+
             Undo.RegisterCreatedObjectUndo(bone.Value.gameObject, "clothing");
             if (avatarBones.TryGetValue(bone.Key, out Transform avatarBone))
                 bone.Value.SetParent(avatarBone, true);
+
+            if (defaultOff)
+                bone.Value.gameObject.SetActive(false);
+
+            if (makeAnims)
+            {
+                createAnim(bone.Value.gameObject, true, true);
+                createAnim(bone.Value.gameObject, false, true);
+            }
         }
         AddLog("Finished parenting bones.");
+
+        if (makeAnims)
+            AddLog("Created toggle animations.");
 
         Undo.DestroyObjectImmediate(clothing);
         clothingRef = null;
         prefix = null;
     }
+
+    private static void createAnim(GameObject obj, bool state, bool nested)
+    {
+        string name = nested ? GetNested(obj.transform) : obj.name;
+        string statusString = state ? "on" : "off";
+
+        if (!AssetDatabase.IsValidFolder("Assets/Polar/UnityDresser/Anims"))
+            AssetDatabase.CreateFolder("Assets/Polar/UnityDresser", "Anims");
+
+        string filename = $"Assets/Polar/UnityDresser/Anims/{prefix}-{statusString}.anim";
+
+        var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(filename);
+        if (clip == null)
+        {
+            clip = new AnimationClip();
+            AssetDatabase.CreateAsset(clip, filename);
+        }
+
+        Keyframe key = new Keyframe(0.0f, state ? 1.0f : 0.0f);
+        Keyframe key2 = new Keyframe(0.01f, state ? 1.0f : 0.0f);
+        AnimationCurve animationCurve = new AnimationCurve(key, key2);
+        clip.SetCurve(name, typeof(GameObject), "m_IsActive", animationCurve);
+    }
+
+    public static string GetNested(Transform current)
+    {
+        if (current.parent != null && current.parent.parent == null)
+            return current.name;
+
+        return GetNested(current.parent) + "/" + current.name;
+    }
+
 }

@@ -12,3 +12,5 @@ Automatic scaling and repositioning  | The clothes will be automatically scaled 
 Reversible  | All changes made by this script can be undone with a simple `LEFT CTRL` + `Z`!
 Prefixing  | Automatic prefixing of gameobjects or use a custom prefix for easier management!
 Grouping Renderers  | Place all renderers (Meshes, Particles, Lines, and Trails) in one gameobject for easier management!
+Default Off  | All clothing gameobjects are disabled for easier management!
+Make Toggle Animations  | Automatically creates a on/off animation for all clothing gameobjects!
